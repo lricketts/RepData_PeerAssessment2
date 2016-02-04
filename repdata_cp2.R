@@ -149,7 +149,7 @@ test$evtype[grep("ice jam", test$evtype)] = events[15]
 test$evtype[grep("glaze", test$evtype)] = events[48]
 
 
-table(test$evtype)
+events2 <- table(test$evtype)
 
 
 table(test$evtype[grep("ice jam", test$evtype)])
