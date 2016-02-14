@@ -299,7 +299,7 @@ laborers.
 
 For more information see the [Ready.gov Resources on Extreme Heat.](http://www.ready.gov/heat)
 
-``` {r, echo = TRUE}
+``` {r, echo = TRUE, fig.width = 10, fig.height = 7}
 # Create bar chart of total fatalities by event type, using ggplot2
 graphset <- head(storm_summary, 10)
 plot1 <- ggplot(graphset, aes(x = reorder(evtype, total_fatalities), y = total_fatalities)) + 
@@ -338,7 +338,7 @@ safety lessons which can help avoid fatalities in the event of a rip current:
 For more information on rip current safety, including how to spot them, see
 this National Weather Service [resource](http://www.ripcurrents.noaa.gov/).
 
-``` {r, echo = TRUE}
+``` {r, echo = TRUE, fig.width = 10, fig.height = 7}
 
 graphset <- head(arrange(storm_summary, desc(share_lethal, share_hurtful)), 10)
 
@@ -371,7 +371,7 @@ avoid developing flood plains. Interestingly, crop damage comprised a very small
 share of most event types economic impact. Although it constituted close to 
 __93 percent__ of damage done by droughts.
 
-``` {r, echo = TRUE}
+``` {r, echo = TRUE, fig.width = 10, fig.height = 7}
 
 graphset <- head(arrange(storm_summary, desc(total_propdmg + total_cropdmg)), 10)
 
