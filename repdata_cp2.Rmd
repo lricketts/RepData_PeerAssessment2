@@ -1,7 +1,60 @@
-setwd("C:/Program Files/R/Coursera/repdata/RepData_PeerAssessment2")
+Identifying the Most Dangerous and Costly Severe Weather Events in the U.S.
+============================================================================
+Author: Lowell Ricketts
+Date: February 2016
+
+# Synopsis
+I find that excessive heat, tornados, and flash floods have caused the greatest
+loss of life in the U.S. since January 1996. On average, each instance of 
+excessive heat, rip currents, and general heat have an 80 percent chance of
+killing at least one person. Flooding across the U.S. caused the most monetary
+damage ($149.1 billion). Along the coasts, hurricanes/typhoons and storm 
+surges/tides caused $87.1 billion and $47.8 billion worth of damage, respectively.
+Crop damage made up a small share of overall losses except for droughts where
+they constituted 93 percent of the total damage.
+
+# Introduction
+
+This project was undertaken during the Coursera Reproducible Research course 
+offered in the Data Science specialization tract, taught by Johns Hopkins University.
+
+Storms and other severe weather events can cause both public health and economic
+problems for communities and municipalities. Many severe events can result in 
+fatalities, injuries, and property damage, and preventing such outcomes to the 
+extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric 
+Administration's (NOAA) storm database. This database tracks characteristics 
+of major storms and weather events in the United States, including when and where 
+they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+# Data
+
+The data for this assignment come in the form of a comma-separated-value file 
+compressed via the bzip2 algorithm to reduce its size. You can download the file 
+from the course web site:
+* [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+There is also some documentation of the database available. Here you will find 
+how some of the variables are constructed/defined.
+* National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+* National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+The events in the database start in the year 1950 and end in November 2011. In 
+the earlier years of the database there are generally fewer events recorded, most
+likely due to a lack of good records. More recent years should be considered more 
+complete.
+
+# Data Processing
+
+Load the dplyr, reshape2, and ggplot2 packages.
+```{r, echo = TRUE}
 library(dplyr)
 library(reshape2)
 library(ggplot2)
+```
+
+Download the data from the source if it's not already present in the working
+directory.
+```{r, echo = TRUE}
 # Download data and read in as data frame
 if (!file.exists("./repdata%2Fdata%2FStormData.csv.bz2")) {
         fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -9,7 +62,11 @@ if (!file.exists("./repdata%2Fdata%2FStormData.csv.bz2")) {
 }
 
 stormdata <- read.csv(bzfile("./repdata%2Fdata%2FStormData.csv.bz2"))
+```
 
+Start the lengthy data cleaning, starting with trimming useless data from the
+date variables and reformatting them as date variables.
+```{r, echo = TRUE}
 # Begin data cleaning
 colnames(stormdata) <- tolower(colnames(stormdata))
 
@@ -22,15 +79,17 @@ stormdata$bgn_date <- as.Date(split$bgn_date, "%m/%d/%Y")
 # 243,411 observations of end_date are blank and yield missing values.
 split <- colsplit(stormdata$end_date, " ", c("end_date", "trash")) 
 stormdata$end_date <- as.Date(split$end_date, "%m/%d/%Y")
+```
 
-# According to the National Oceanic and Atmospheric Administration, only
-# data on tornados were collected from 1950 to 1954, from 1955 to 1992 data on
-# tornados, and thunderstorm wind and hail were recorded, from 1996 to present
-# 48 event types were recorded as defined in the NWS Directive 10-1605. For
-# the purposes of finding which types of storms caused the most fatalities and
-# injuries, as well as property damage only data from 1996 to the present is
-# used.
-# https://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype
+According to the National Oceanic and Atmospheric Administration, only data on 
+tornados were collected from 1950 to 1954, from 1955 to 1992 data on tornados, and 
+thunderstorm wind and hail were recorded, from 1996 to present 48 event types were 
+recorded as defined in the NWS Directive 10-1605. For the purposes of finding which 
+types of storms caused the most fatalities and injuries, as well as property damage, 
+only data from 1996 to the present is used.
+[See for more information](https://www.ncdc.noaa.gov/stormevents/details.jsp?type=eventtype)
+
+``` {r, echo = TRUE}
 
 stormdata <- filter(stormdata, bgn_date >= "1996-01-01") %>%
         
@@ -61,13 +120,13 @@ stormdata <- filter(stormdata, bgn_date >= "1996-01-01") %>%
         
         # Arrange in proposed order of importance.
         arrange(desc(fatalities, injuries, propdmg, cropdmg))
+```
 
+Next I created an event category variable populated with the 48 categorical events 
+listed in Figure 2.1.1 in [NWSI 10-1605 Aug. 17, 2007](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+Accessed on 9/23/2015 
 
-# Create event category variable based on 48 categorical events listed in 
-# Figure 2.1.1 in NWSI 10-1605 Aug. 17, 2007.
-# Accessed on 9/23/2015 at:
-# https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
-
+``` {r, echo = TRUE}
 events <- c("astronomical low tide", "avalanche", "blizzard", "coastal flood", 
             "cold/Wind chill", "debris flow", "dense fog", "dense smoke", 
             "drought", "dust devil", "dust storm", "excessive heat", 
@@ -80,7 +139,18 @@ events <- c("astronomical low tide", "avalanche", "blizzard", "coastal flood",
             "storm surge/tide", "strong wind", "thunderstorm wind", "tornado", 
             "tropical depression", "tropical storm", "tsunami", "volcanic ash", 
             "waterspout", "wildfire", "winter storm", "winter weather")
+```
 
+Next, the real nitty gritty part of the assignment began. There were numerous records
+which had event types coded as something not listed in the 48 NWSI event types.
+I proceded to use the table() function to identify what appeared to be event
+types that intuitively fell within one of the 48 categories. As I reduced the 
+number of irregular event types I had to refer to NWSI documentation to identify
+the most similar event type as what was suggested by the remarks within the
+particularly irregular records. No records were dropped, all of them were recoded 
+according to the following lengthy list of commands.
+
+``` {r, echo = TRUE}
 # Recode evtype observations to standard codes after inspecting table(evtype)
 # to identify which events were coded as something other than the 48 events
 # listed by the NWSI. The latter changes required looking up the remarks for
@@ -176,12 +246,28 @@ stormdata$evtype[20454:20483] = events[21]
 stormdata$evtype[54842] = events[10]
 stormdata$evtype[65845] = events[10]
 stormdata$evtype[5481] = events[2]
+```
 
+The last piece of data processing involved creating binary variables which
+indicate wether an event had at least one fatality, or one injury, or property
+damage, or crop damage. These are used for a figure later on which details the
+lethal nature of the various event types.
+
+``` {r, echo = TRUE}
 # Create binary bins for fatalities, injuries, property damage, and crop damage
 stormdata <- mutate(stormdata, lethal = ifelse(fatalities > 0, 1, 0), 
                     hurtful = ifelse(injuries > 0, 1, 0), 
                     damaging = ifelse(propdmg > 0, 1, 0),
                     withering = ifelse(cropdmg > 0, 1, 0))
+```
+
+# Results
+
+To begin analysis I created a summary data frame which had the total of 
+fatalities, injuries, property damage, and crop damage over time for each of the
+event types. I also calculated the mean over time for each of the event types.
+
+``` {r, echo = TRUE}
 
 # Begin analysis
 storm_summary <- group_by(stormdata, evtype) %>%
@@ -198,7 +284,22 @@ storm_summary <- group_by(stormdata, evtype) %>%
         
         arrange(desc(total_fatalities, total_injuries, 
                      total_propdmg, total_cropdmg))
+```
 
+The first figure, shown below, compares the total number of fatalities since
+January 1996 for the 10 most lethal event types. Episodes of __excessive heat__
+combined for __1,799__ deaths across the United States. __Tornado's__ were a close
+second with __1,511__ deaths. The death toll __drops 41 percent__ for __flash floods__ 
+which cost the lives of __887__ people.
+
+Fortunately, excessive heat is an event that carries with it substantial forewarning
+and offers a significant window wherein civic leaders can mobilize resources to
+help those who are the most vulnerable, such as the elderly, homeless, and outdoor 
+laborers.
+
+For more information see the [Ready.gov Resources on Extreme Heat.](http://www.ready.gov/heat)
+
+``` {r, echo = TRUE}
 # Create bar chart of total fatalities by event type, using ggplot2
 graphset <- head(storm_summary, 10)
 plot1 <- ggplot(graphset, aes(x = reorder(evtype, total_fatalities), y = total_fatalities)) + 
@@ -213,20 +314,31 @@ plot1 <- ggplot(graphset, aes(x = reorder(evtype, total_fatalities), y = total_f
               axis.title = element_text(size = 16, face = "bold")) +
         scale_y_continuous(limits = c(0,2000))
 print(plot1)
+```
 
-# Chart the total number of injuries for each type of disaster over time
-plot2 <- ggplot(graphset, aes(x = reorder(evtype, total_injuries), y = total_injuries)) + 
-        geom_bar(fill = "#FF6600", stat = "identity") + 
-        geom_text(aes(label = total_injuries), size = 6, fontface = "bold", hjust = -0.5) +
-        labs(title = "Total Number of Injuries Since January 1996, by Disaster") +
-        coord_flip() +
-        labs(x = expression("Disaster")) + 
-        labs(y = expression("Injury Toll")) +
-        theme(title = element_text(size = 16, face = "bold"),
-              axis.text = element_text(size = 12), 
-              axis.title = element_text(size = 14, face = "bold")) +
-        scale_y_continuous(limits = c(0,22000))
-print(plot2)
+For the next figure I looked at the share of total event incidents which resulted
+in at least one fatality. Loss of life is arguably the greatest loss and identifying
+which events are more likely to result in fatalities, even for the smaller events,
+is worth identifying.
+
+Once again __excessive heat__ is the most lethal of the events, with __82 percent__
+of instances resulting in at least one fatality. Interestingly, __rip currents__ 
+are also highly lethal events with __80 percent__ of occurance resulting in death.
+Excessive heat's close cousin __heat__ kills __78 percent__ of the time, rounding
+out the top 3.
+
+Civic leaders in coastal areas should take note of these results. Rip current's
+are a common occurance with [tens of thousands](http://oceanservice.noaa.gov/facts/ripcurrent.html) 
+of people rescued from rip currents in the US every year. There are numerous
+safety lessons which can help avoid fatalities in the event of a rip current:
+* If caught in a rip current __DON'T PANIC__
+* Only swim at beaches with lifeguards present
+* Check water conditions before going to the beach by looking at the local beach forecast
+
+For more information on rip current safety, including how to spot them, see
+this National Weather Service [resource](http://www.ripcurrents.noaa.gov/).
+
+``` {r, echo = TRUE}
 
 graphset <- head(arrange(storm_summary, desc(share_lethal, share_hurtful)), 10)
 
@@ -244,23 +356,22 @@ plot3 <- ggplot(graphset, aes(x = reorder(evtype, share_lethal), y = share_letha
               axis.title = element_text(size = 14, face = "bold")) +
         scale_y_continuous(limits = c(0,90))
 print(plot3)
+```
 
-graphset <- head(arrange(storm_summary, desc(total_propdmg + total_cropdmg)), 10)
+Lastly, I wanted to look at the ranking of event types by the total monetary
+damage that they have caused since January 1996. Monetary damage is the sum of
+property damage as well as damage to agricultural crops. Unlike the rankings for
+fatalities the three most damaging event types were: __floods__, __hurricane and typhoons__,
+and __storm surges/tides__. Flooding has cost the United States __$149.1 billion__.
+That number is unadjusted for inflation so the real impact would likely be much
+higher. Hurricanes and typhoons combined for __$87.1 billion__ worth of damage, 
+and storm surges and tides destroyed __$47.8 billion__ worth of property. To 
+minimize the economic cost of flooding, urban planners and developers should 
+avoid developing flood plains. Interestingly, crop damage comprised a very small
+share of most event types economic impact. Although it constituted close to 
+__93 percent__ of damage done by droughts.
 
-plot4 <- ggplot(graphset, aes(x = reorder(evtype, total_propdmg + total_cropdmg), 
-                              y = (total_propdmg + total_cropdmg)/1000000000)) +
-        geom_bar(fill = "#006653", stat = "identity") + 
-        geom_text(aes(label = round(((total_propdmg + total_cropdmg)/1000000000),1)), 
-                  size = 6, hjust = -.5, fontface = "bold") +
-        labs(title = "Total Amount of Economic Damage Since January 1996, by Disaster") +
-        coord_flip() +
-        labs(x = expression("Disaster")) + 
-        labs(y = expression("Nominal Monetary Damage ($ Billions)")) +
-        theme(title = element_text(size = 16, face = "bold"),
-              axis.text = element_text(size = 12), 
-              axis.title = element_text(size = 16, face = "bold")) +
-        scale_y_continuous(limits = c(0,170))
-print(plot4)
+``` {r, echo = TRUE}
 
 graphset <- head(arrange(storm_summary, desc(total_propdmg + total_cropdmg)), 10)
 
@@ -303,3 +414,11 @@ plot5 <- ggplot(dat, aes(x = reorder(evtype, value), y = value/1000000000, fill 
 suppressWarnings(print(plot5))
 
 droughtcropdmg
+```
+
+# Conclusion
+
+In summary, much of the death toll caused by severe weather events can be prevented
+with better support provided to vulnerable communities. Much of the economic impact
+of these disasters could be avoided with adifferent development pattern that avoids
+flood plains as well as coastal areas.
